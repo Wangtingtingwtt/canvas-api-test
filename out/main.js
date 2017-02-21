@@ -65,12 +65,8 @@ var TextField = (function () {
         this.textColor = "#000000";
     }
     TextField.prototype.draw = function (context2D) {
-        this.toggleCase();
         context2D.fillStyle = this.textColor;
         context2D.fillText(this.text, this.x, this.y, 100);
-    };
-    TextField.prototype.toggleCase = function () {
-        this.textColor.toLocaleUpperCase();
     };
     return TextField;
 }());
