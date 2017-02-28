@@ -1,64 +1,55 @@
-class Point {
-    x: number;
-    y: number;
-    constructor(x: number, y: number) {
+var Point = (function () {
+    function Point(x, y) {
         this.x = x;
         this.y = y;
     }
-}
-
-function pointAppendMatrix(point: Point, m: Matrix): Point {
+    return Point;
+}());
+function pointAppendMatrix(point, m) {
     var x = m.a * point.x + m.c * point.y + m.tx;
     var y = m.b * point.x + m.d * point.y + m.ty;
     return new Point(x, y);
-
 }
-
-class Rectangle {
-    x = 0;
-    y = 0;
-    width = 1;
-    height = 1;
-
-    constructor(x: number, y: number, width: number, height: number) {
+var Rectangle = (function () {
+    function Rectangle(x, y, width, height) {
+        this.x = 0;
+        this.y = 0;
+        this.width = 1;
+        this.height = 1;
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
     }
-
-    isPointInRectangle(point: Point) {
+    Rectangle.prototype.isPointInRectangle = function (point) {
         if (point.x >= this.x &&
             point.x <= (this.x + this.width) &&
             point.y >= this.y &&
-            point.y <= (this.y + this.height)
-        ) {
+            point.y <= (this.y + this.height)) {
             return true;
-        } else {
+        }
+        else {
             return false;
         }
-    }
-}
+    };
+    return Rectangle;
+}());
 /**
  * 使用伴随矩阵法求逆矩阵
  * http://wenku.baidu.com/view/b0a9fed8ce2f0066f53322a9
  */
-function invertMatrix(m: Matrix): Matrix {
-
-
+function invertMatrix(m) {
     var a = m.a;
     var b = m.b;
     var c = m.c;
     var d = m.d;
     var tx = m.tx;
     var ty = m.ty;
-
     var determinant = a * d - b * c;
     var result = new Matrix(1, 0, 0, 1, 0, 0);
     if (determinant == 0) {
         throw new Error("no invert");
     }
-
     determinant = 1 / determinant;
     var k = result.a = d * determinant;
     b = result.b = -b * determinant;
@@ -67,11 +58,8 @@ function invertMatrix(m: Matrix): Matrix {
     result.tx = -(k * tx + c * ty);
     result.ty = -(b * tx + d * ty);
     return result;
-
 }
-
-function matrixAppendMatrix(m1: Matrix, m2: Matrix): Matrix {
-
+function matrixAppendMatrix(m1, m2) {
     var result = new Matrix();
     result.a = m1.a * m2.a + m1.b * m2.c;
     result.b = m1.a * m2.b + m1.b * m2.d;
@@ -81,17 +69,19 @@ function matrixAppendMatrix(m1: Matrix, m2: Matrix): Matrix {
     result.ty = m2.b * m1.tx + m2.d * m1.ty + m2.ty;
     return result;
 }
-
 var PI = Math.PI;
 var HalfPI = PI / 2;
 var PacPI = PI + HalfPI;
 var TwoPI = PI * 2;
-var DEG_TO_RAD: number = Math.PI / 180;
-
-
-class Matrix {
-
-    constructor(a: number = 1, b: number = 0, c: number = 0, d: number = 1, tx: number = 0, ty: number = 0) {
+var DEG_TO_RAD = Math.PI / 180;
+var Matrix = (function () {
+    function Matrix(a, b, c, d, tx, ty) {
+        if (a === void 0) { a = 1; }
+        if (b === void 0) { b = 0; }
+        if (c === void 0) { c = 0; }
+        if (d === void 0) { d = 1; }
+        if (tx === void 0) { tx = 0; }
+        if (ty === void 0) { ty = 0; }
         this.a = a;
         this.b = b;
         this.c = c;
@@ -99,35 +89,21 @@ class Matrix {
         this.tx = tx;
         this.ty = ty;
     }
-
-    public a: number;
-
-    public b: number;
-
-    public c: number;
-
-    public d: number;
-
-    public tx: number;
-
-    public ty: number;
-
-    public toString(): string {
+    Matrix.prototype.toString = function () {
         return "(a=" + this.a + ", b=" + this.b + ", c=" + this.c + ", d=" + this.d + ", tx=" + this.tx + ", ty=" + this.ty + ")";
-    }
-
-    updateFromDisplayObject(x: number, y: number, scaleX: number, scaleY: number, rotation: number) {
+    };
+    Matrix.prototype.updateFromDisplayObject = function (x, y, scaleX, scaleY, rotation) {
         this.tx = x;
         this.ty = y;
         var skewX, skewY;
         skewX = skewY = rotation / 180 * Math.PI;
-
         var u = Math.cos(skewX);
         var v = Math.sin(skewX);
         this.a = Math.cos(skewY) * scaleX;
         this.b = Math.sin(skewY) * scaleX;
         this.c = -v * scaleY;
         this.d = u * scaleY;
-
-    }
-}
+    };
+    return Matrix;
+}());
+//# sourceMappingURL=math.js.map

@@ -1,188 +1,259 @@
 
-
 window.onload = () => {
 
-    var c=document.getElementById("myCanvas") as HTMLCanvasElement;
-    var cxt=c.getContext("2d");
-   
+    var canvas = document.getElementById("myCanvas") as HTMLCanvasElement;
+    var context = canvas.getContext("2d");
+
+    var container = new DisplayObjectContainer();
+    container.alpha = 1;
+    container.x = 50;
+
+    var image = new Bitmap();
+    image.alpha = 0.5;
+    image.src = "captain.jpg";
+    image.scaleX = 1;
+    image.scaleY = 1;
+    image.x = 50;
+    image.y = 50;
+
+    var text = new TextField();
+    text.x = 50;
+    text.y = 50;
+    text.scaleY = 1;
+    text.alpha = 0.5;
+    text.color = "#FF0000";
+    text.fontName = "Arial";
+    text.fontSize = 20;
+    text.text = "Hello World";
+
+    container.addChild(image);
+    container.addChild(text);
+
+    var stage = new DisplayObjectContainer();
+    stage.addChild(container);
+
+    var imageY = image.y;
+
+    // image.addEventListener("mousedown", (e) => {
+    //     console.log("image");
+    // }, false)
+    image.addEventListener("mousemove", (e) => {
+        image.y += e.movementY;
+        console.log(e.movementY);
+    }, false)
     
+    text.addEventListener("mousedown", (e) => {
+        console.log("text");
+    }, false)
+    container.addEventListener("mousedown", (e) => {
+        console.log("container");
+    }, false)
 
-    var stage: DisplayObjectContainer = new DisplayObjectContainer();
-    var panel = new DisplayObjectContainer();
-    panel.x = 120;
-    panel.y = 50;
-    panel.alpha = 0.5;
-    
-    setInterval(() => {
-        
-        cxt.clearRect(0, 0, c.width, c.height);//在显示图片之前先清屏，将之前帧的图片去掉,清屏范围最好设置成画布的宽与高
-        stage.draw(cxt);
+    stage.draw(context);
 
-    }, 100)
+    var doMouseEvent = (e: MouseEvent, type: string) => {
+        let x = e.offsetX;
+        let y = e.offsetY;
+        let target = stage.hitTest(x, y);
+        let result = target;
+        if (result) {
+            result.dispatchEvent(type, target, target, e);
+            while (result.parent) {
+                let currentTarget = result.parent;
+                //    let e = { type, target, currentTarget };
+                result.parent.dispatchEvent(type, target, currentTarget, e);
+                result = result.parent;
+            }
+            TouchEventListenerManagement.dispatch(e);
+        }
 
-  
-
-    var img: Bitmap = new Bitmap();
-   
-    img.x = 50;
-    img.y = 50;
-    img.width = 800;
-    img.height = 800;
-    img.alpha = 0.5;
-
-    var tf: TextField = new TextField();
-    tf.text = "picture1";
-    tf.x = 50;
-    tf.y = 50;
-    tf.textColor = "#0000FF"
-    tf.alpha = 0.8;
-   
-        img.image.onload = () => {
-
-        img.width = 400;
-        img.height = 400;
-        
-        panel.addChild(tf);
-        stage.addChild(img);
-        stage.addChild(panel);
-
-    
     }
 
+    window.onmousedown = (e) => {
 
- 
+        doMouseEvent(e, "mousedown");
+        window.onmousemove = (e) => {
+            doMouseEvent(e, "mousemove");
+        }
+        window.onmouseup = (e) => {
+            doMouseEvent(e, "mouseup");
+            window.onmousemove = ()=>{}
+            window.onmouseup = ()=>{}
+        }
+
+    }
+    
+    setInterval(() => {
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        stage.draw(context);
+    }, 30)
+
 };
 
 interface Drawable {
-    draw(context2D: CanvasRenderingContext2D);
+    draw(context: CanvasRenderingContext2D);
 }
 
+abstract class DisplayObject implements Drawable {
+    x = 0;
+    y = 0;
+    scaleX = 1;
+    scaleY = 1;
+    rotation = 0;
+    alpha = 1;
+    globalAlpha = 1;
+    isContainer = false;
+
+    parent: DisplayObjectContainer;
+
+    relativeMatrix: Matrix;     //相对矩阵
+    overallMatrix: Matrix;      //全局矩阵
+
+    eventListenerList = [];
+
+    draw(context: CanvasRenderingContext2D) {
+        this.relativeMatrix = new Matrix();
+        this.relativeMatrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);
+
+        if (this.parent) {
+            this.globalAlpha = this.parent.globalAlpha * this.alpha;
+            this.overallMatrix = matrixAppendMatrix(this.relativeMatrix, this.parent.overallMatrix);
+        } else {
+            this.globalAlpha = this.alpha;
+            this.overallMatrix = this.relativeMatrix;
+        }
+
+        context.globalAlpha = this.globalAlpha;
+        this.render(context);
+    }
+
+    abstract render(context: CanvasRenderingContext2D);
+    abstract hitTest(x, y);
+
+    addEventListener(type: string, func: (e?: MouseEvent) => void, capture: boolean) {
+        let listener = new TouchEventListener(type, func, capture);
+        this.eventListenerList.push(listener);
+    };
+
+    dispatchEvent(type: string, target: DisplayObject, currentTarget: DisplayObject, e: MouseEvent) {
+        for (var i = 0; i < this.eventListenerList.length; i++) {
+            if (this.eventListenerList[i].type == type && this.eventListenerList[i].capture == true) {
+                TouchEventListenerManagement.list.unshift(this.eventListenerList[i]);
+            }
+            else if (this.eventListenerList[i].type == type && this.eventListenerList[i].capture == false) {
+                TouchEventListenerManagement.list.push(this.eventListenerList[i]);
+            }
+        }
+
+    };
+}
+
+class DisplayObjectContainer extends DisplayObject {
+    isContainer = true;
+    list: DisplayObject[] = [];
+
+    render(context: CanvasRenderingContext2D) {
+
+        for (let displayObject of this.list) {
+            displayObject.draw(context);
+        }
+    }
+
+    addChild(child: DisplayObject) {
+        this.list.push(child);
+        child.parent = this;
+    }
+
+    hitTest(x, y): DisplayObject {
+        for (let i = this.list.length - 1; i >= 0; i--) {
+            let child = this.list[i];
+            let point = new Point(x, y);
+            let invertChildRelativeMatrix = invertMatrix(this.relativeMatrix);
+            let resultPoint = pointAppendMatrix(point, invertChildRelativeMatrix);
+            let hitTestResult = child.hitTest(resultPoint.x, resultPoint.y);
+            if (hitTestResult) {
+                return hitTestResult;
+            }
+        }
+        return null;
+    };
+
+}
+
+class TextField extends DisplayObject {
+    text = "";
+    color = "";
+    fontSize = 10;
+    fontName = "";
+
+    render(context: CanvasRenderingContext2D) {
+        context.fillStyle = this.color;
+        context.font = this.fontSize.toString() + "px " + this.fontName.toString();
+        context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+        context.fillText(this.text, 0, 0 + this.fontSize);
+
+    }
+
+    hitTest(x, y) {
+        let point = new Point(x, y);
+        let invertChildRelativeMatrix = invertMatrix(this.relativeMatrix);
+        let resultPoint = pointAppendMatrix(point, invertChildRelativeMatrix);
+        let rectangle = new Rectangle(0, 0, this.text.length * 10, this.fontSize);
+        if (rectangle.isPointInRectangle(resultPoint)) {
+            //  console.log(this);
+            return this;
+        } else {
+            return null;
+        }
+
+    };
+}
 
 class Bitmap extends DisplayObject {
-    image: HTMLImageElement;
-    width : number = 0;
-    height : number = 0;
+    private image: HTMLImageElement = null;
+    private isLoaded = false;
     constructor() {
-        
         super();
         this.image = document.createElement("img");
     }
-
-    render(context2D: CanvasRenderingContext2D) {
-        
-        context2D.drawImage(this.image, 0, 0, this.width, this.height);
-        //context2D.drawImage(this.image, 0, 0);
+    private _src = "";
+    set src(value: string) {
+        this._src = value;
+        this.isLoaded = false;
     }
 
-    }
+    render(context: CanvasRenderingContext2D) {
+        if (this.isLoaded) {
+            context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+            context.drawImage(this.image, 0, 0);
 
-
-
-class TextField extends DisplayObject{
-    x: number = 0;
-    y: number = 0;
-    text: string = "";
-    textColor: string = "#000000"
-   draw(context2D: CanvasRenderingContext2D) {
-        context2D.fillStyle = this.textColor;
-        context2D.fillText(this.text, this.x, this.y, 100);
-    }
-}
-
-
-class DisplayObject implements Drawable{
-
-    x : number = 0;
-    y : number = 0;
-    scaleX : number = 1;
-    scaleY : number = 1;
-    rotation : number = 0; 
-
-    matrix : math.Matrix = null;
-    globalMatrix : math.Matrix = null;
-
-    alpha : number = 1;
-    globalAlpha : number = 1;//全局                             
-    parent : DisplayObject = null;
-
-    constructor(){
-
-        this.matrix = new math.Matrix();
-        this.globalMatrix = new math.Matrix();
-        
-    }
-    
-    
-    //final，所有子类都要执行且不能修改
-    draw(context2D: CanvasRenderingContext2D) {
-        
-
-        this.matrix.updateFromDisplayObject(this.x, this.y, this.scaleX, this.scaleY, this.rotation);//初始化矩阵
-        //console.log(this.matrix.toString());
-
-
-        //Alpha值
-        if(this.parent){
-
-            this.globalAlpha = this.parent.globalAlpha * this.alpha;
-            this.globalMatrix = math.matrixAppendMatrix(this.matrix, this.parent.globalMatrix);
-
-        }else{
-
-            this.globalAlpha = this.alpha;
-            this.globalMatrix = this.matrix;
         }
+        else {
+            this.image.src = this._src;
+            this.image.onload = () => {
+                context.setTransform(this.overallMatrix.a, this.overallMatrix.b, this.overallMatrix.c, this.overallMatrix.d, this.overallMatrix.tx, this.overallMatrix.ty);
+                context.drawImage(this.image, 0, 0);
 
-        context2D.globalAlpha = this.globalAlpha;
-        //console.log(context2D.globalAlpha);
-        
-        //变换
-        
-        context2D.setTransform(this.globalMatrix.a, this.globalMatrix.b, this.globalMatrix.c, this.globalMatrix.d, this.globalMatrix.tx, this.globalMatrix.ty);
-        this.render(context2D);
-
-        //模板方法模式
-    }
-
-    //在子类中重写
-    render(context2D: CanvasRenderingContext2D){
-
-
-    }
-
-}
-
-
-
-class DisplayObjectContainer extends DisplayObject{
-    
-    array: DisplayObject[] = [];
-
-    render(context2D : CanvasRenderingContext2D){
-
-        for (let displayObject of this.array) {
-
-            displayObject.draw(context2D);
-        }
-    }
-
-    addChild(displayObject : DisplayObject){
-
-        this.array.push(displayObject);
-        displayObject.parent = this;
-
-    }
-
-    removeChild(displayObject : DisplayObject){
-
-        var tempArray = this.array.concat();
-        for(let each of tempArray){
-
-            if(each == displayObject){
-
-                var index = this.array.indexOf(each);
-                tempArray.splpicture2(index, 1);
-                this.array = tempArray;
-                return;
+                this.isLoaded = true;
             }
-    }}}
+        }
+    }
+
+    hitTest(x, y) {
+        let point = new Point(x, y);
+        let invertChildRelativeMatrix = invertMatrix(this.relativeMatrix);
+        let resultPoint = pointAppendMatrix(point, invertChildRelativeMatrix);
+        let rectangle = new Rectangle(0, 0, this.image.width, this.image.height);
+        if (rectangle.isPointInRectangle(resultPoint)) {
+            // console.log(this);
+            return this;
+        } else {
+            return null;
+        }
+    };
+}
+
+
+
+
