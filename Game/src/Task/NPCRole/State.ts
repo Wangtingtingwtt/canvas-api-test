@@ -1,0 +1,6 @@
+interface State {
+
+      onEnter();
+      
+      onExit();
+  }

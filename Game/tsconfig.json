@@ -1,0 +1,44 @@
+{
+	"compilerOptions": {
+		"target": "es5",
+		"sourceMap": true, //断点用的 
+		// "module": "commonjs",
+		// "outDir": "./out"
+		"out": "./Game/out/Game.js"
+	},
+	"include": [
+		"../engine/out/engine.d.ts",
+		"src/Game.ts",
+		"src/Astar/Astar.ts",
+		"src/Astar/Grid.ts",
+		"src/Astar/TileMap.ts",
+		"src/Command/Command.ts",
+		"src/Command/CommandList.ts",
+		"src/GameManager/SceneManager.ts",
+		"src/GameManager/UIManager.ts",
+		"src/GameManager/GameManager.ts",
+		"src/Task/NPCRole/Idle.ts",
+		"src/Task/NPCRole/Role.ts",
+		"src/Task/NPCRole/Walk.ts",
+		"src/Task/NPCRole/State.ts",
+		"src/Task/DialoguePanel.ts",
+		"src/Task/NPC.ts",
+		"src/Task/Task.ts",
+		"src/Task/TaskPanel.ts",
+		"src/Task/TaskService.ts",
+		"src/UserPanel/Bignumber.ts",
+		"src/UserPanel/Hero.ts",
+		"src/UserPanel/User.ts",
+		"src/UserPanel/Equipment.ts",
+		"src/UserPanel/Crystal.ts",
+		"src/UserPanel/Details.ts",
+		"src/UserPanel/HeroStatusBar.ts",
+		"src/UserPanel/Objectdetail.ts",
+		"src/UserPanel/Property.ts",
+		"src/UserPanel/tool.ts",
+		"src/enum.ts",
+		"src/HeroBar.ts",
+		"src/Monster.ts",
+		"src/Main.ts"
+	]
+}
